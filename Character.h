@@ -1,28 +1,27 @@
+#ifndef CHARACTER_H
+#define CHARACTER_H
+
 #include "raylib.h"
-class Character
+#include "BaseCharacter.h"
+
+class Character : public BaseCharacter
 {
 public:
-    Character();
-    Vector2 getWorldPos() { return worldPos; }
-    void setScreenPos(int winWidth, int winHeight);
-    void tick(float deltaTime);
-    void undoMovement();
-
+    Character(int winWidth, int winHeight);
+    virtual void tick(float deltaTime) override;
+    virtual Rectangle getCollisionRec() override;
+    virtual Vector2 getScreenPos() override;
+    Rectangle getWeaponCollisionRec(){ return weaponCollisionRec; }
+    float getHealth() const { return health; }
+    void takeDamage(float damage);
 private:
-    Texture2D texture{LoadTexture("characters/link.png")};
-    Vector2 screenPos{};
-    Vector2 worldPos{};
-    Vector2 worldPosLastFrame{};
-    // animation variables
-    float runningTime{};
-    int frame{};
-    int maxFrame{23};
-    float updateTime{1.0 / 32.0f};
-    int secondRow{0};
-    float speed{4.0f};
-    // which direction the character is facing
+    int collisionBuffer = 50;
+    int windowWidth{};
+    int windowHeight{};
     int charDirection{1};
-    //width and height of sprite
-    float width;
-    float height;
+    Texture2D weapon{LoadTexture("characters/weapon_sword.png")};
+    Rectangle weaponCollisionRec{};
+    float health{100.0f};
 };
+
+#endif

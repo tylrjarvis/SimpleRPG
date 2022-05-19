@@ -1,56 +1,60 @@
 #include "Character.h"
 #include "raymath.h"
 
-Character::Character()
+Character::Character(int winWidth, int winHeight) : windowWidth(winWidth),
+                                                    windowHeight(winHeight)
 {
-    width = texture.width/12;
-    height = texture.height/8;
+    width = texture.width / 12;
+    height = texture.height / 8;
+    scale = 3.0f;
+    maxFrame = 23;
 }
-void Character::setScreenPos(int winWidth, int winHeight)
+Vector2 Character::getScreenPos()
 {
-    screenPos = {
-        (float)winWidth / 2.0f - 3.0f * (0.5f * width),
-        (float)winHeight / 2.0f - 3.0f * (0.5f * height)
-    };
+    return Vector2{
+        static_cast<float>(windowWidth) / 2.0f - scale * (0.5f * width),
+        static_cast<float>(windowHeight) / 2.0f - scale * (0.5f * height)};
 }
 
 void Character::tick(float deltaTime)
 {
-    //store last known worldPos
-    worldPosLastFrame = worldPos;
+    if(!getAlive()) return;
 
-    // direction player wants to move
-    Vector2 direction{};
+    BaseCharacter::tick(deltaTime);
 
     // move the player
     if (IsKeyDown(KEY_A))
-        direction.x -= 1.0f;
+        velocity.x -= 1.0f;
     if (IsKeyDown(KEY_D))
-        direction.x += 1.0f;
+        velocity.x += 1.0f;
     if (IsKeyDown(KEY_W))
-        direction.y -= 1.0f;
+        velocity.y -= 1.0f;
     if (IsKeyDown(KEY_S))
-        direction.y += 1.0f;
-    if (Vector2Length(direction) != 0.0f)
+        velocity.y += 1.0f;
+    if (Vector2Length(velocity) != 0.0f)
     {
         // set worldPos = worldPos + direction (we are moving the map not the character)
-        worldPos = Vector2Add(worldPos, Vector2Scale(Vector2Normalize(direction), speed));
-        if (direction.y < 0.0f)
+        worldPos = Vector2Add(worldPos, Vector2Scale(Vector2Normalize(velocity), speed));
+        if (velocity.y < 0.0f)
             charDirection = 0; // up
-        else if (direction.x > 0.0f)
+        else if (velocity.x > 0.0f)
+        {
             charDirection = 1; // right
-        else if (direction.y > 0.0f)
+            leftRight = 1;
+        }
+        else if (velocity.y > 0.0f)
             charDirection = 2; // down
         else
+        {
             charDirection = 3; // left
+            leftRight = -1;
+        }
     }
     else
     {
         frame = 0;
     }
 
-    // update animation frame
-    runningTime += deltaTime;
     if (runningTime >= updateTime)
     {
         frame++;
@@ -63,13 +67,56 @@ void Character::tick(float deltaTime)
         else if (frame > 11)
             secondRow = 1;
     }
+    Vector2 origin{};
+    Vector2 offset{};
+    float rotation{};
+    if (leftRight > 0.0f)
+    {
+        origin = {0.0f, weapon.height * scale};
+        offset = {45.f, 75.f};
+        weaponCollisionRec = {
+            getScreenPos().x + offset.x,
+            getScreenPos().y + offset.y - weapon.height * scale,
+            weapon.width * scale,
+            weapon.height * scale
+        };
+        IsMouseButtonDown(MOUSE_LEFT_BUTTON) ? rotation = 35.0f : rotation = 0.0f;
+    }
+    else
+    {
+        origin = {weapon.width * scale, weapon.height * scale};
+        offset = {30.0f, 75.f};
+        weaponCollisionRec = {
+            getScreenPos().x + offset.x - weapon.width * scale,
+            getScreenPos().y + offset.y - weapon.height * scale,
+            weapon.width * scale,
+            weapon.height * scale
+        };
+        IsMouseButtonDown(MOUSE_LEFT_BUTTON) ? rotation = -35.0f : rotation = 0.0f;
+    }
+
+    // draw sword
+    Rectangle swordSource{0.0f, 0.0f, static_cast<float>(weapon.width) * leftRight, static_cast<float>(weapon.height)};
+    Rectangle swordDest{getScreenPos().x + offset.x, getScreenPos().y + offset.y, weapon.width * scale, weapon.height * scale};
+    DrawTexturePro(weapon, swordSource, swordDest, origin, rotation, WHITE);
 
     Rectangle source{frame * width, (4 * secondRow + charDirection) * height, width, height};
-    Rectangle dest{screenPos.x, screenPos.y, 3.0f * width, 3.0f * height};
+    Rectangle dest{getScreenPos().x, getScreenPos().y, scale * width, scale * height};
     DrawTexturePro(texture, source, dest, Vector2{}, 0.0f, WHITE);
 }
-
-void Character::undoMovement()
+Rectangle Character::getCollisionRec()
 {
-    worldPos = worldPosLastFrame;
+    return Rectangle{
+        getScreenPos().x,
+        getScreenPos().y + collisionBuffer,
+        width * scale,
+        height * scale - collisionBuffer};
+}
+void Character::takeDamage(float damage)
+{
+    health -= damage;
+    if(health <= 0.0f)
+    {
+        setAlive(false);
+    }
 }
