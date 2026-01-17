@@ -1,6 +1,6 @@
 # SimpleRPG – C++ Role-Playing Game (raylib)
 
-![SimpleRPGThumbnail.jpeg]
+![SimpleRPG])(SimpleRPGThumbnail.jpeg)
 
 **SimpleRPG** is a C++ role-playing game built using [raylib](https://www.raylib.com/). The project demonstrates real-time gameplay systems, player and enemy mechanics, input handling, and modular game architecture. Designed to showcase low-level programming, system design, and performance-aware coding for game development.
 
